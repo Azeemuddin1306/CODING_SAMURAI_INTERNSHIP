@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid black;
+            border-radius: 5px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        input[type="text"],
+        select,
+        input[type="date"],
+        button {
+            margin-bottom: 10px;
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            background-color: aqua;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .task {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid orange;
+            border-radius: 5px;
+            opacity: 0;
+            animation: fadeIn 0.5s ease-in-out forwards;
+        }
+
+        .completed {
+            text-decoration: line-through;
+            opacity: 0.5;
+
+        }
+
+        .edit-btn {
+            position: right;
+            top: 5px;
+            right: 5px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            color: aqua;
+        }
+
+        .edit-form {
+            display: none;
+            margin-bottom: 10px;
+            background-color: grey;
+        }
+
+        .edit-form input,
+        .edit-form select,
+        .edit-form button {
+            width: calc(100% - 16px);
+            margin: 4px 8px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" style="background-color: gold;">
+        <h1>To-Do List</h1>
+        <form id="taskForm">
+            <input type="text" id="taskTitle" placeholder="Enter task title" required>
+            <input type="text" id="taskDescription" placeholder="Enter task description">
+            <label for="priority">Priority:</label>
+            <select id="priority" required>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+            </select>
+            <label for="dueDate">Due Date:</label>
+            <input type="date" id="dueDate" required>
+            <button type="submit" id="addTaskBtn">Add Task</button>
+        </form>
+        <ul id="taskList"></ul>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const taskForm = document.getElementById('taskForm');
+            const taskList = document.getElementById('taskList');
+            let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+            taskForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const taskTitle = document.getElementById('taskTitle').value;
+                const taskDescription = document.getElementById('taskDescription').value;
+                const priority = document.getElementById('priority').value;
+                const dueDate = document.getElementById('dueDate').value;
+
+                const task = {
+                    id: Date.now(),
+                    title: taskTitle,
+                    description: taskDescription,
+                    priority: priority,
+                    dueDate: dueDate,
+                    completed: false
+                };
+
+                tasks.push(task);
+                saveTasks();
+                addTaskToList(task);
+                taskForm.reset();
+            });
+
+            function addTaskToList(task) {
+                const li = document.createElement('li');
+                li.style.backgroundColor = 'grey';
+                li.className = 'task';
+                li.setAttribute('data-id', task.id);
+                li.innerHTML = `
+          <input type="checkbox">
+          <span class="title">${task.title}</span>
+          <span class="priority">${task.priority}</span>
+          <span class="dueDate">${task.dueDate}</span>
+          <button class="edit-btn">Edit</button>
+          <button class="delete-btn">Delete</button>
+          <form class="edit-form">
+            <input type="text" class="edit-title" placeholder="Edit task title" required>
+            <input type="text" class="edit-description" placeholder="Edit task description">
+            <select class="edit-priority" required>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+            <input type="date" class="edit-dueDate" required>
+            <button type="button" class="save-edit-btn">Save</button>
+          </form>
+        `;
+                taskList.appendChild(li);
+
+                setTimeout(() => {
+                    li.style.opacity = 1;
+                    li.style.transform = 'translateY(0)';
+                }, 50);
+
+                const checkbox = li.querySelector('input[type="checkbox"]');
+                checkbox.addEventListener('change', function () {
+                    task.completed = checkbox.checked;
+                    saveTasks();
+                    li.classList.toggle('completed', checkbox.checked);
+                });
+
+                const editButton = li.querySelector('.edit-btn');
+                editButton.addEventListener('click', function () {
+                    const editForm = li.querySelector('.edit-form');
+                    const titleInput = editForm.querySelector('.edit-title');
+                    const descriptionInput = editForm.querySelector('.edit-description');
+                    const prioritySelect = editForm.querySelector('.edit-priority');
+                    const dueDateInput = editForm.querySelector('.edit-dueDate');
+
+                    titleInput.value = task.title;
+                    descriptionInput.value = task.description;
+                    prioritySelect.value = task.priority;
+                    dueDateInput.value = task.dueDate;
+
+                    editForm.style.display = 'block';
+                });
+
+                const saveEditButton = li.querySelector('.save-edit-btn');
+                saveEditButton.addEventListener('click', function () {
+                    const editForm = li.querySelector('.edit-form');
+                    const titleInput = editForm.querySelector('.edit-title');
+                    const descriptionInput = editForm.querySelector('.edit-description');
+                    const prioritySelect = editForm.querySelector('.edit-priority');
+                    const dueDateInput = editForm.querySelector('.edit-dueDate');
+
+                    task.title = titleInput.value;
+                    task.description = descriptionInput.value;
+                    task.priority = prioritySelect.value;
+                    task.dueDate = dueDateInput.value;
+
+                    saveTasks();
+                    refreshTaskList();
+                });
+
+                const deleteButton = li.querySelector('.delete-btn');
+                deleteButton.addEventListener('click', function () {
+                    tasks = tasks.filter(t => t.id !== task.id);
+                    saveTasks();
+                    refreshTaskList();
+                });
+            }
+
+            function refreshTaskList() {
+                // Sort tasks by dueDate in ascending order
+                tasks.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+                taskList.innerHTML = '';
+                tasks.forEach(addTaskToList);
+            }
+
+            function saveTasks() {
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+            }
+
+            refreshTaskList();
+        });
+    </script>
+</body>
+</html>
